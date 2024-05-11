@@ -32,9 +32,17 @@ from flask import (
     send_from_directory,
 )
 from flask_cors import CORS
+app = Flask(__name__,  static_url_path='/static', static_folder='static')
+CORS(app)  # Enable CORS for all routes
 
-# Use this if there is no user_id sent
-SPEAKER_WAV_PATH = "female_voice.wav"  # Update this path
+# Directory where files are saved
+UPLOAD_FOLDER = os.path.join(app.root_path, 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+DOWNLOAD_FOLDER = os.path.join(app.root_path, 'downloads')
+os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
+FILE_DIRECTORY = os.path.join(app.root_path, 'audios')
+os.makedirs(FILE_DIRECTORY, exist_ok=True)
+
     
 # Set environment variable for Coqui TTS agreement
 os.environ["COQUI_TOS_AGREED"] = "1"
