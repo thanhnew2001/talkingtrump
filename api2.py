@@ -43,7 +43,10 @@ os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 FILE_DIRECTORY = os.path.join(app.root_path, 'audios')
 os.makedirs(FILE_DIRECTORY, exist_ok=True)
 
-    
+# Initialize the Whisper model #large-v3 seems to have a problem
+whisper_model_name = "large-v3"
+whisper_model = WhisperModel(whisper_model_name, device="cuda", compute_type="auto", num_workers=5)
+
 # Set environment variable for Coqui TTS agreement
 os.environ["COQUI_TOS_AGREED"] = "1"
 
@@ -303,4 +306,4 @@ def transcribe_speech_wav2lips():
 
 
 if __name__ == "__main__":
-    app.run(port=5001,debug=True)
+    app.run(port=5005,debug=True)
