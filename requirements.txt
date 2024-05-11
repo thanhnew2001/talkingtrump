@@ -1,0 +1,21 @@
+opencv-python
+torch
+numpy
+tqdm
+moviepy
+librosa
+numba
+torchaudio
+TTS @ git+https://github.com/coqui-ai/TTS.git#egg=TTS
+transformers
+faster_whisper
+pydub
+flask_cors
+hf_hub_ctranslate2
+deepspeed
+SentencePiece
+sacremoses
+cutlet
+python-dotenv
+ctranslate2
+chardet
