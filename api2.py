@@ -12,7 +12,6 @@ from transformers import MarianMTModel, MarianTokenizer
 from faster_whisper import WhisperModel
 from transformers import AutoTokenizer
 import json
-import torch
 from torch.nn import functional as F
 import numpy as np
 
@@ -32,7 +31,8 @@ from flask import (
     send_from_directory,
 )
 from flask_cors import CORS
-app = Flask(__name__,  static_url_path='/static', static_folder='static')
+
+app = Flask(__name__, static_url_path='/static', static_folder='static')
 CORS(app)  # Enable CORS for all routes
 
 # Directory where files are saved
@@ -43,8 +43,8 @@ os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 FILE_DIRECTORY = os.path.join(app.root_path, 'audios')
 os.makedirs(FILE_DIRECTORY, exist_ok=True)
 
-# Initialize the Whisper model #large-v3 seems to have a problem
-whisper_model_name = "large-v3"
+# Initialize the Whisper model
+whisper_model_name = "large-v2"  # Changed to a stable version
 whisper_model = WhisperModel(whisper_model_name, device="cuda", compute_type="auto", num_workers=5)
 
 # Set environment variable for Coqui TTS agreement
@@ -77,7 +77,7 @@ if os.path.exists(config_path):
         config,
         checkpoint_path=os.path.join(model_path, "model.pth"),
         vocab_path=os.path.join(model_path, "vocab.json"),
-        checkpoint_dir= model_path,
+        checkpoint_dir=model_path,
         eval=True,
         use_deepspeed=False
     )
@@ -93,9 +93,11 @@ SPEAKER_WAV_PATH = "trump.wav"  # Update this path
 
 from TTS.api import TTS
 tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2", gpu=True)
-def test_xtts(text, language):
-    # tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2", gpu=True)
 
+# Cache for speaker latents
+speaker_latents_cache = {}
+
+def test_xtts(text, language):
     if not os.path.exists("wavs"):
         os.mkdir("wavs")
 
@@ -208,7 +210,6 @@ def check_language_existence(lang):
     else:
         return False
 
-
 from Wav2Lip import Processor
 
 def process_wav2lip(face_path, audio_path, output_path):
@@ -223,8 +224,6 @@ def process_wav2lip(face_path, audio_path, output_path):
     processor = Processor()
     processor.run(face_path, audio_path, output_path)
 
-import base64
-
 def base64_to_mp3(base64_string, output_filename):
     # Decode the base64 string
     mp3_data = base64.b64decode(base64_string)
@@ -233,17 +232,14 @@ def base64_to_mp3(base64_string, output_filename):
     with open(output_filename, 'wb') as mp3_file:
         mp3_file.write(mp3_data)
 
-
-
 @app.route('/')
 def index():
     return send_from_directory(app.static_folder, 'index.html')
 
-
-# Transcribe - Translate - Speech  with additional info:
+# Transcribe - Translate - Speech with additional info:
 @app.route("/transcribe_speech_wav2lips", methods=["POST"])
 def transcribe_speech_wav2lips():
-    start_time =time.time()
+    start_time = time.time()
     if "file" not in request.files:
         return jsonify({"error": "No file part"}), 400
     file = request.files["file"]
@@ -266,7 +262,6 @@ def transcribe_speech_wav2lips():
         )
         given_lang = info.language
 
-
         segment_list = []
         for segment in segments:
             segment_dict = {
@@ -277,33 +272,23 @@ def transcribe_speech_wav2lips():
             segment_list.append(segment_dict)
 
         joined_text = " ".join([segment["text"] for segment in segment_list])
-        # print(joined_text)
-        # print(given_lang)
      
-        # 2. Speech using XTTS
-        # mp3_data = generate_audio_mp3(
-        #         joined_text, "en", "trump.wav"
-        #     )
-
-        # mp3_filename = f"input_{fileid}.mp3"
-        # base64_to_mp3(mp3_data, mp3_filename)
-
+        # Generate audio using XTTS
         audio_path = test_xtts(joined_text, "en")
 
         if not os.path.exists("mp4"):
             os.mkdir("mp4")
 
         process_wav2lip("trump.jpg", audio_path, f"mp4/output_{fileid}.mp4")
-        end_time =time.time()
-        print("Total time:",end_time-start_time)
+        
+        end_time = time.time()
+        print("Total time:", end_time - start_time)
         return send_file(f"mp4/output_{fileid}.mp4", mimetype='video/mp4')
 
     except Exception as e:
-        # os.remove(os.path.join(FILE_DIRECTORY, input_filename))
+        os.remove(input_filename)
         print(e)
         return jsonify({"error": str(e)}), 500
 
-
-
 if __name__ == "__main__":
-    app.run(port=5005,debug=True)
+    app.run(port=5005, debug=True)
