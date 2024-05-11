@@ -33,55 +33,51 @@ from flask import (
 )
 from flask_cors import CORS
 
-from dotenv import load_dotenv
-
-load_dotenv()
-
-weights_relative_path = os.getenv("MODEL_DIR")
-HF_TOKEN = os.getenv("HF_TOKEN_READ")
-
-app = Flask(__name__, static_folder='static')
-
-CORS(app)  # Enable CORS for all routes
-
-# Directory where files are saved
-FILE_DIRECTORY = os.path.join(app.root_path, "mp3")
-os.makedirs(FILE_DIRECTORY, exist_ok=True)
-
-# Initialize the Whisper model #large-v3 seems to have a problem
-whisper_model = WhisperModel(f"faster-whisper-v3")
-
+# Use this if there is no user_id sent
+SPEAKER_WAV_PATH = "female_voice.wav"  # Update this path
+    
 # Set environment variable for Coqui TTS agreement
 os.environ["COQUI_TOS_AGREED"] = "1"
 
-config_path = f"coqui-xtts-v2/config.json"
+# Define the model name and path
+xtts_model_name = "tts_models/multilingual/multi-dataset/xtts_v2"
+
+model_manager = ModelManager()
+
+# Check if the model directory exists, if not, attempt to download the model
+model_path = os.path.join(get_user_data_dir("tts"), xtts_model_name.replace("/", "--"))
+config_path = os.path.join(model_path, "config.json")
+
+if not os.path.exists(model_path):
+    print(f"Model directory not found. Attempting to download the model to: {model_path}")
+    model_manager.download_model(xtts_model_name)
+else:
+    print(f"Model directory already exists: {model_path}")
 
 # Check if the config file exists after attempting to download
 if os.path.exists(config_path):
     print("Model config file found. Proceeding with model initialization.")
-
+    
     # Initialize the model from the configuration
     config = XttsConfig()
     config.load_json(config_path)
     xtts_model = Xtts.init_from_config(config)
     xtts_model.load_checkpoint(
         config,
-        checkpoint_path=f"coqui-xtts-v2/model.pth",
-        vocab_path=f"coqui-xtts-v2/vocab.json",
+        checkpoint_path=os.path.join(model_path, "model.pth"),
+        vocab_path=os.path.join(model_path, "vocab.json"),
+        checkpoint_dir= model_path,
         eval=True,
-        use_deepspeed=True,
+        use_deepspeed=False
     )
     print("CUDA Available:", torch.cuda.is_available())
 
     xtts_model.cuda()  # Use CUDA if available, else consider .to("cpu")
-
+    
     print("Model loaded successfully.")
 else:
     raise FileNotFoundError(f"Model configuration file not found at: {config_path}")
 
-# Dictionary to store speaker encoding latents for reuse
-speaker_latents_cache = {}
-# Use this if there is no user_id sent
 SPEAKER_WAV_PATH = "trump.wav"  # Update this path
 
 from TTS.api import TTS
