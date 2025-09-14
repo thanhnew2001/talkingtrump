@@ -1,0 +1,16 @@
+{
+  "name": "talkingtrump",
+  "version": "1.0.0",
+  "description": "AI-powered Talking Trump video call app",
+  "main": "index.js",
+  "scripts": {
+    "dev": "wrangler pages dev public",
+    "deploy": "wrangler pages deploy public"
+  },
+  "keywords": ["ai", "trump", "video", "call", "replicate"],
+  "author": "thanhnew2001",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

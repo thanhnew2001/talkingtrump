@@ -1,92 +1,152 @@
-# HOW TO RUN?
+# Talking Trump - AI Video Call App
 
-1. export MODEL_DIR=$(pwd)/models
-2. git clone xxx
-3. cd xxx
-4. python3 download.py
-5. python3 api.py
+An AI-powered video call application featuring Donald Trump's voice and personality, built with Cloudflare Pages and Replicate AI.
 
-# Wav2Lip-Inference-on-Python3.9
-This project fixes the Wav2Lip project Inference so that it can run on Python 3.9. Wav2Lip is a project that can be used to lip-sync videos to audio. The original project was dependent on Python 3.6 and used deprecated libraries. Alot of people were unable to resolve the issues. This project fixes those problems so that Wav2Lip can now run on Python 3.9 or higher.
+## Features
 
-Original Project: https://github.com/Rudrabha/Wav2Lip
+- 🎥 **Video Interface**: Interactive video call experience
+- 🎤 **Voice Recognition**: Speak naturally with speech-to-text
+- 🗣️ **AI Voice Generation**: Trump's voice powered by Replicate AI
+- 💬 **Chat History**: Persistent conversation memory
+- 🎭 **Personality Traits**: Authentic Trump speaking patterns and traits
+- 📱 **Responsive Design**: Works on desktop and mobile devices
 
-This repository enables you to perform lip-syncing using the Wav2Lip model directly in Python, offering an alternative to command-line usage. It provides a `Processor` class with methods to process video and audio inputs, generate lip-synced videos, and customize various options. You can also find the original command-line options available as arguments in this Python script.
+## Tech Stack
 
-## Getting Started
+- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
+- **Backend**: Cloudflare Pages Functions
+- **AI Voice**: Replicate API (Tortoise TTS)
+- **AI Text**: Replicate API (Meta Llama 3.1)
+- **Speech Recognition**: Web Speech API
+- **Deployment**: Cloudflare Pages
 
-### Prerequisites
+## Setup Instructions
 
-Before using this repository, ensure you have the following prerequisites installed:
-
-- Python 3.9 or later
-- Dependencies listed in `requirements.txt`
-- Download and place pretrained checkpoints in checkpoints folder. You can get the links to download in the original repository.
-
-### Installing
-
-To get started, clone this repository:
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/HassanMuhammadSannaullah/Wav2lip-Fix-For-Inference.git
-cd Wav2lip-Fix-For-Inference
-pip install -r requirements.txt
+git clone https://github.com/thanhnew2001/talkingtrump.git
+cd talkingtrump
 ```
-## Important Note
-In the decorators.py file of the librose module, make the following change to ensure compatibility:
 
-```python
-# Change this import line
-from numba.decorators import jit as optional_jit
+### 2. Install Dependencies
 
-# To this
-from numba import jit as optional_jit
+```bash
+npm install
+```
+
+### 3. Set Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+REPLICATE_API_TOKEN=your_replicate_api_token_here
+NEWS_API_KEY=your_news_api_key_here
+```
+
+### 4. Deploy to Cloudflare Pages
+
+1. Connect your GitHub repository to Cloudflare Pages
+2. Set the following environment variables in Cloudflare Pages dashboard:
+   - `REPLICATE_API_TOKEN`: Your Replicate API key
+   - `NEWS_API_KEY`: Your NewsAPI key (optional)
+
+### 5. Generate Greeting Audio Files (Optional)
+
+```bash
+# Set your Replicate API token
+export REPLICATE_API_TOKEN="your_token_here"
+
+# Run the greeting generator
+python3 generate_greetings.py
+```
+
+## API Keys Required
+
+| Variable | Value | Description |
+|----------|-------|-------------|
+| `REPLICATE_API_TOKEN` | `r8_...` | Your Replicate API key |
+| `NEWS_API_KEY` | `...` | Your NewsAPI key (optional) |
+
+## Project Structure
+
+```
+talkingtrump/
+├── public/
+│   ├── index.html          # Main application
+│   ├── greetings/          # Generated greeting audio files
+│   └── trump/             # Trump images
+├── functions/
+│   └── api/
+│       ├── health.js      # Health check endpoint
+│       └── trump-response.js # Main AI response API
+├── generate_greetings.py  # Script to generate greeting audio
+├── package.json
+├── wrangler.toml
+└── README.md
 ```
 
 ## Usage
-You can either directly run the wav2lip.py file in the project or import Process class from it, somewhere else in the code. Following is the sample way to run the inference
 
-1. Import Processor class
-```python
-from Wav2Lip import Processor
+1. **Start a Call**: Click "Start Call" to begin
+2. **Speak or Type**: Use voice recognition or type your messages
+3. **Chat with Trump**: Experience AI-powered conversations with Trump's personality
+4. **View History**: Chat history is automatically saved and restored
+
+## Features in Detail
+
+### AI Personality
+- Authentic Trump speaking patterns
+- References to current events and politics
+- Characteristic phrases and expressions
+- Blames Biden administration for problems
+- Claims expertise on various topics
+
+### Voice Features
+- High-quality voice synthesis using Tortoise TTS
+- Custom Trump voice model
+- Fallback to browser TTS if needed
+- Microphone muting during AI responses
+
+### Chat Features
+- Persistent chat history in localStorage
+- System message filtering
+- Real-time conversation flow
+- Clear chat history option
+
+## Development
+
+### Local Development
+
+```bash
+# Start development server
+npm run dev
 ```
 
-2. Use run method to perform inference
-```python
-processor = Processor()
-processor.run("path_to_face_video_or_image", "path_to_audio.wav", "output_path.mp4")
+### Deployment
+
+```bash
+# Deploy to Cloudflare Pages
+npm run deploy
 ```
 
-Additional Options
-You can customize various options by providing arguments to the Processor class constructor or modifying the run method. Here are some important options:
-```
-# These can be set in the constructor
-checkpoint_path: Path to the Wav2Lip model checkpoint. 
-nosmooth: Disable smoothening of face boxes. 
-static: Use a static image for face detection. 
+## Environment Variables
 
-# All below can be set in the run function of Processor class
-resize_factor: Resize factor for video frames. 
-rotate: Rotate frames (useful for portrait videos).
-crop: Crop the video frame [y1, y2, x1, x2].
-fps: Frames per second for the output video.
-mel_step_size: Mel spectrogram step size.
-wav2lip_batch_size: Batch size for inference.
-```
-For detailed information on these options, refer to the code comments in the Processor class, or refer to the original implementation of wav2lip
+Make sure these are set in Cloudflare Pages:
+- `REPLICATE_API_TOKEN`: Your Replicate API key
+- `SITE_URL`: Your deployed site URL (for reference audio)
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## License
+
+MIT License - see LICENSE file for details
 
 ## Disclaimer
 
-This project is provided for educational and entertainment purposes only. The author and contributors of this repository are not responsible for any harmful, unethical, or inappropriate use of the software or its outputs. Users are encouraged to adhere to ethical guidelines and legal regulations when using this project.
-
-Please use this project responsibly and consider the implications of your actions. If you have any concerns or questions regarding the usage of this software, feel free to reach out for guidance.
-
-By using this software, you agree to the above disclaimer.
-
-## Acknowledgments
-This project is built upon the Wav2Lip repository by Rudrabha Mukhopadhyay.
-If you encounter any issues or have questions, feel free to open an issue 
-
-Happy lip-syncing!
-
-
+This is a demonstration project for educational purposes. The AI-generated content does not represent actual political views or statements.
