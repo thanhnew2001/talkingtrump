@@ -11,10 +11,15 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --vh: 1vh;
+        }
+
         body {
             font-family: 'Arial', sans-serif;
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             min-height: 100vh;
+            min-height: calc(var(--vh, 1vh) * 100);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -270,12 +275,134 @@
         @media (max-width: 768px) {
             .container {
                 grid-template-columns: 1fr;
-                height: auto;
-                min-height: 100vh;
+                height: 100vh;
+                padding: 10px;
+                gap: 15px;
             }
             
             .video-container {
-                min-height: 250px;
+                min-height: 200px;
+                max-height: 40vh;
+                border-radius: 10px;
+            }
+            
+            .chat-container {
+                padding: 15px;
+                border-radius: 10px;
+            }
+            
+            .chat-header h2 {
+                font-size: 20px;
+            }
+            
+            .chat-header p {
+                font-size: 12px;
+            }
+            
+            .message {
+                font-size: 14px;
+                padding: 10px 14px;
+                max-width: 90%;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+            
+            .chat-input input {
+                font-size: 14px;
+                padding: 10px 14px;
+            }
+            
+            .status {
+                font-size: 14px;
+                padding: 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 5px;
+                gap: 10px;
+            }
+            
+            .video-container {
+                min-height: 150px;
+                max-height: 35vh;
+            }
+            
+            .chat-container {
+                padding: 10px;
+            }
+            
+            .chat-header h2 {
+                font-size: 18px;
+            }
+            
+            .message {
+                font-size: 13px;
+                padding: 8px 12px;
+            }
+            
+            .btn {
+                padding: 8px 16px;
+                font-size: 13px;
+            }
+            
+            .chat-input {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .chat-input input {
+                font-size: 13px;
+                padding: 8px 12px;
+            }
+            
+            .controls {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+        }
+
+        /* Mobile-specific improvements */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+            
+            .chat-messages {
+                max-height: 300px;
+            }
+            
+            /* Touch-friendly buttons */
+            .btn {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* Better touch targets */
+            .clear-chat-btn {
+                min-height: 36px;
+                padding: 8px 16px;
+            }
+        }
+
+        /* Landscape mobile optimization */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .container {
+                grid-template-columns: 1fr 1fr;
+                height: 100vh;
+            }
+            
+            .video-container {
+                min-height: 120px;
+                max-height: 50vh;
+            }
+            
+            .chat-messages {
+                max-height: 200px;
             }
         }
     </style>
@@ -312,6 +439,7 @@
                 
                 <div class="chat-input">
                     <input type="text" id="message-input" placeholder="Type your message here..." disabled>
+                    <button id="mic-btn" class="btn btn-secondary" style="display: none;" title="Hold to speak">🎤</button>
                     <button id="send-btn" class="btn btn-primary" disabled>Send</button>
                 </div>
             </div>
@@ -327,11 +455,13 @@
                 this.recognition = null;
                 this.mediaStream = null;
                 this.chatHistory = [];
+                this.isMobileDevice = this.isMobile();
                 
                 this.initializeElements();
                 this.setupEventListeners();
                 this.initializeSpeechRecognition();
                 this.loadChatHistory();
+                this.setupMobileOptimizations();
             }
 
             initializeElements() {
@@ -342,6 +472,7 @@
                 this.chatMessages = document.getElementById('chat-messages');
                 this.messageInput = document.getElementById('message-input');
                 this.sendBtn = document.getElementById('send-btn');
+                this.micBtn = document.getElementById('mic-btn');
                 this.trumpVideo = document.getElementById('trump-video');
                 this.clearChatBtn = document.getElementById('clear-chat-btn');
             }
@@ -355,6 +486,66 @@
                     if (e.key === 'Enter') this.sendMessage();
                 });
                 this.clearChatBtn.addEventListener('click', () => this.clearChatHistory());
+                
+                // Mobile microphone button
+                if (this.micBtn) {
+                    this.setupMobileMicButton();
+                }
+            }
+
+            setupMobileMicButton() {
+                let micPressed = false;
+                
+                // Touch events for mobile
+                this.micBtn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (!this.isCallActive || this.isAudioPlaying) return;
+                    
+                    micPressed = true;
+                    this.micBtn.style.background = '#ff5252';
+                    this.micBtn.textContent = '🔴';
+                    this.startListening();
+                });
+                
+                this.micBtn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    if (!micPressed) return;
+                    
+                    micPressed = false;
+                    this.micBtn.style.background = '';
+                    this.micBtn.textContent = '🎤';
+                    
+                    if (this.recognition && this.isListening) {
+                        this.recognition.stop();
+                    }
+                });
+                
+                // Mouse events for desktop
+                this.micBtn.addEventListener('mousedown', (e) => {
+                    if (!this.isCallActive || this.isAudioPlaying) return;
+                    
+                    micPressed = true;
+                    this.micBtn.style.background = '#ff5252';
+                    this.micBtn.textContent = '🔴';
+                    this.startListening();
+                });
+                
+                this.micBtn.addEventListener('mouseup', (e) => {
+                    if (!micPressed) return;
+                    
+                    micPressed = false;
+                    this.micBtn.style.background = '';
+                    this.micBtn.textContent = '🎤';
+                    
+                    if (this.recognition && this.isListening) {
+                        this.recognition.stop();
+                    }
+                });
+                
+                // Prevent context menu on long press
+                this.micBtn.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                });
             }
 
             initializeSpeechRecognition() {
@@ -364,6 +555,11 @@
                     this.recognition.continuous = false;
                     this.recognition.interimResults = false;
                     this.recognition.lang = 'en-US';
+                    
+                    // Mobile-specific settings
+                    if (this.isMobile()) {
+                        this.recognition.maxAlternatives = 1;
+                    }
 
                     this.recognition.onstart = () => {
                         console.log('🎤 Speech recognition started');
@@ -453,6 +649,11 @@
                 this.messageInput.disabled = true;
                 this.sendBtn.disabled = true;
                 this.clearChatBtn.style.display = 'none';
+                
+                // Hide microphone button
+                if (this.micBtn) {
+                    this.micBtn.style.display = 'none';
+                }
             }
 
             startListening() {
@@ -727,6 +928,137 @@
                 }
                 
                 console.log('🗑️ Chat history cleared');
+            }
+
+            isMobile() {
+                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                       window.innerWidth <= 768;
+            }
+
+            setupMobileOptimizations() {
+                if (!this.isMobileDevice) return;
+
+                // Prevent zoom on input focus (iOS)
+                const viewport = document.querySelector('meta[name="viewport"]');
+                if (viewport) {
+                    viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+                }
+
+                // Add touch event listeners for better mobile interaction
+                this.addTouchListeners();
+                
+                // Optimize for mobile viewport
+                this.optimizeViewport();
+                
+                // Add mobile-specific UI hints
+                this.addMobileHints();
+            }
+
+            addTouchListeners() {
+                // Add touch feedback for buttons
+                const buttons = document.querySelectorAll('.btn, .clear-chat-btn');
+                buttons.forEach(btn => {
+                    btn.addEventListener('touchstart', (e) => {
+                        e.target.style.transform = 'scale(0.95)';
+                    });
+                    
+                    btn.addEventListener('touchend', (e) => {
+                        e.target.style.transform = 'scale(1)';
+                    });
+                });
+
+                // Prevent double-tap zoom on buttons
+                buttons.forEach(btn => {
+                    btn.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                    });
+                });
+            }
+
+            optimizeViewport() {
+                // Set proper viewport height for mobile browsers
+                const setViewportHeight = () => {
+                    const vh = window.innerHeight * 0.01;
+                    document.documentElement.style.setProperty('--vh', `${vh}px`);
+                };
+
+                setViewportHeight();
+                window.addEventListener('resize', setViewportHeight);
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(setViewportHeight, 100);
+                });
+            }
+
+            addMobileHints() {
+                // Add mobile-specific status messages
+                if (this.isMobileDevice) {
+                    const mobileHint = document.createElement('div');
+                    mobileHint.className = 'message system';
+                    mobileHint.innerHTML = '📱 Mobile: Tap the microphone icon or type to chat!';
+                    mobileHint.style.fontSize = '12px';
+                    mobileHint.style.opacity = '0.8';
+                    
+                    // Insert after welcome message
+                    const welcomeMessage = this.chatMessages.querySelector('.message.system');
+                    if (welcomeMessage) {
+                        welcomeMessage.insertAdjacentElement('afterend', mobileHint);
+                    }
+                }
+            }
+
+            async startCall() {
+                if (this.isCallActive) return;
+                
+                try {
+                    this.isCallActive = true;
+                    this.updateStatus('Starting call...', 'listening');
+                    
+                    // Mobile-specific media constraints
+                    const constraints = {
+                        video: {
+                            width: { ideal: this.isMobileDevice ? 640 : 1280 },
+                            height: { ideal: this.isMobileDevice ? 480 : 720 },
+                            facingMode: this.isMobileDevice ? 'user' : 'environment'
+                        },
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        }
+                    };
+                    
+                    // Request camera and microphone access
+                    this.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                    
+                    this.updateStatus('Call connected! You can now speak or type.', 'connected');
+                    this.startCallBtn.style.display = 'none';
+                    this.endCallBtn.style.display = 'inline-block';
+                    this.messageInput.disabled = false;
+                    this.sendBtn.disabled = false;
+                    this.clearChatBtn.style.display = 'inline-block';
+                    
+                    // Show microphone button on mobile
+                    if (this.isMobileDevice && this.micBtn) {
+                        this.micBtn.style.display = 'inline-block';
+                    }
+                    
+                    // Start listening for speech
+                    this.startListening();
+                    
+                    // Play greeting
+                    this.speakTrumpGreeting();
+                    
+                } catch (error) {
+                    console.error('❌ Error starting call:', error);
+                    let errorMessage = 'Error accessing camera/microphone. Please allow access and try again.';
+                    
+                    if (this.isMobileDevice) {
+                        errorMessage = 'Please allow camera and microphone access in your browser settings, then refresh the page.';
+                    }
+                    
+                    this.updateStatus(errorMessage, 'disconnected');
+                    this.isCallActive = false;
+                }
             }
         }
 
